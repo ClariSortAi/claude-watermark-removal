@@ -1,12 +1,12 @@
-# The Claude watermark dies when Claude stops choosing the words
+# Goodbye, watermarks. All you have to do is have another model re-write your text and disrupt known patterns of watermarking.
 
-Nobody recovered Anthropic's key. They do not need to. Every published scheme in this family fails the same way: a second model rewrites the sentences hard enough that the original token windows are gone.
+Making no claim or warranty that this works, or has access to any info outside of the public domain. Every published scheme in this family fails the same way: a second model rewrites the sentences hard enough that the original token windows are gone.
 
 This repo names that attack, refuses to run it on Claude (Claude restamps the mark), and publishes the measurement from a live pass.
 
 **Get the skill:** [SKILL.md](SKILL.md)
 
-Copy it to `~/.agents/skills/ngram-rewrite/SKILL.md`. Invoke it on OpenAI, Gemini, Grok, or a local model. Do not invoke it on Claude.
+Copy it to `~/.agents/skills/SKILL.md` (or just tell your harness to install it). Invoke it on OpenAI, Gemini, Grok, or a local model. You can try Claude, but that would be a fool's endeavor.
 
 ---
 
@@ -16,9 +16,9 @@ On 2 August 2026 Anthropic began embedding a machine-readable watermark in text 
 
 > When a supported Claude model generates text, it weaves an imperceptible watermark directly into the text itself. You won't see it, and it doesn't change the meaning, quality, or readability of Claude's response. Because the watermark is part of the text, it will travel with the text when it's copied and pasted elsewhere, and may persist through some editing.
 
-They have not published the algorithm, the keys, or a public detector.
+They have not published the algorithm, the keys, or a public detector - and they likley never will
 
-What they did publish is enough to place it. The mark is applied at generation, inside the model, in the words themselves. It is not a Unicode sprinkle and not a file tag. [Decrypt](https://decrypt.co/375594/anthropic-quietly-watermarking-ai-claude-output-builders-break) and [Search Engine Journal](https://www.searchenginejournal.com/why-anthropics-claude-watermark-may-be-a-new-text-marking-method/585703/) put it in the same family as Google SynthID-Text: a secret function grades each next token, and the sampler leans toward the graded ones. Roger Montti at SEJ lined Anthropic's six stated properties up against MirrorMark and MCmark. Same family. Files can also carry [C2PA](https://c2pa.org/). That is a different layer. This page is about the words.
+What they did publish is enough to place it. The mark is applied at generation, inside the model, in the words (tokens) themselves. It is not a Unicode sprinkle and not a file tag. [Decrypt](https://decrypt.co/375594/anthropic-quietly-watermarking-ai-claude-output-builders-break) and [Search Engine Journal](https://www.searchenginejournal.com/why-anthropics-claude-watermark-may-be-a-new-text-marking-method/585703/) put it in the same family as Google SynthID-Text: a secret function grades each next token, and the sampler leans toward the graded ones. Roger Montti at SEJ lined Anthropic's six stated properties up against MirrorMark and MCmark. Same family. Files can also carry [C2PA](https://c2pa.org/). That is a different layer. This page is about the words.
 
 A March 2026 Claude Code tracker used hidden Unicode. Anthropic pulled it. That is not this mark. Unicode scrubbers do not touch this mark.
 

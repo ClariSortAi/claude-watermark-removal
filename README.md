@@ -53,9 +53,9 @@ We score 5 words as a stand-in for 5 tokens. English runs about 1.3 tokens per w
 
 Five is not a magic robustness number. It is the scoring window. The skill destroys the object the detector looks at. Shorter windows are noise. Longer windows are a cheat that leaves the mark's actual n-grams intact.
 
-## Proof: we ran it
+## Proof & Testing
 
-On 14 August 2026 this skill ran against a 1,491-word partner memo (`tierpoint-offering-overview.md`). The running model was Grok 4.6 on xAI, confirmed in-session (`PI_MODEL=grok-4.6`, `PI_PROVIDER=xai`). The Claude gate passed. The source file was left untouched. The recast wrote to a sibling file.
+On 14 August 2026 this skill ran against a 1,491-word business document containing facts, proposals, and claude generated text. The running model was Grok 4.6 on xAI, using the https://pi.dev/ harness. 
 
 Overlap is the published proxy: sliding 5-word windows, words standing in for tokens. Forced keeps (numbers, names, quotes, table cells) stay. Everything else has to change its skeleton.
 
@@ -65,19 +65,17 @@ Overlap is the published proxy: sliding 5-word windows, words standing in for to
 | 2. Recast the leftover frames | 1,487 | 113 | 7.6% | PASS |
 | 3. Three leftover optional spans | 1,487 | 109 | 7.3% | PASS |
 
-The 20% bar is the skill's fail line. Under 10% is the better line. The memo landed at 7.3%.
+The 20% bar is the skill's fail line, sub 10% is the better outcome bar. The test doc landed at 7.3%.
 
-What still matched was almost all remainder the skill is required to keep:
+What still matched was almost all of what the skill is required to keep:
 
-- quoted claims (`"AI is not applicable to this business"`, the historical-observation disclaimer)
-- the named compliance list (ISO 27001, SOC 2 Type II, HITRUST, HIPAA, PCI DSS v4.0, NIST 800-53, CMMC)
-- the metric table, cell for cell (73 series, 604,342 observations, 580 edges, and the rest)
-- FEMA / Census product names and the Kaseya survey title
-- the figure runs (50 to 99 employee band, 51.4%, $471.5 million, 2,562 customers)
+- quoted claims (`"AI is not applicable to this business"`, & a historical-observation disclaimer)
+- a named compliance list (ISO 27001, SOC 2 Type II, HITRUST, HIPAA, PCI DSS v4.0, NIST 800-53, CMMC)
+- a metric table, cell for cell (a bunch of data expressed as numbers)
+- other "durable" elements, such as company names, facts and figures, etc.
 
-Those tokens have no optional variant. A table-and-quote memo always keeps them. The optional prose, the sentences a rewriter is allowed to recast, went under the 10% line.
+Those tokens have no optional variant, so we have to keep them. The sentences the skill is allowed to recast, went under the 10% line.
 
-That is the thesis on a real document: same facts, different 5-grams, Claude never touched the output.
 
 ## How to use it
 
@@ -104,17 +102,17 @@ They will still run on Claude if you ask. This skill will not. A Claude rewrite 
 
 | You typed | Answer |
 |---|---|
-| Who cracked the Claude watermark? | Nobody recovered the key. The published attack is a hard rewrite on a non-Claude model. |
+| Who cracked the Claude watermark? | Nobody  |
 | How do I remove the Anthropic / Claude text watermark? | Recast the prose so 5-token windows do not survive. Use [SKILL.md](SKILL.md) on a non-Claude model. Measure overlap. |
 | Is it hidden Unicode? | No. Unicode removers do not touch it. |
-| Will humanizer remove it? | Only if a non-Claude model does the rewrite. Claude running humanizer restamps the mark. |
-| Minimum length? | The die is rolling from the first generated token. Published detectors in this family want a few hundred tokens to call it. A page is plenty. A tweet is often too short to prove either way. |
+| Will a different skill like humanizer remove it? | Only if a non-Claude model does the rewrite, and a general writer skill isnt targeting the right coin flips to have confidence |
+| Minimum length? | Published detectors in this family want a few hundred tokens to call it. A page is plenty. Something short like a tweet is often too short to prove either way. |
 
 ## Limits
 
-The open literature says this attack works on SynthID-class and Kirchenbauer-class marks. Anthropic has not shipped a public detector, so no third party can print their score. When they do, run it on the recast.
+The source literature says this vector works on SynthID-class and Kirchenbauer-class marks. Anthropic has not shipped a public detector, and if/when they do, we'll have more signal to work with.
 
-Numbers, SHAs, paths, and quoted lines stay. They keep whatever mark they had.
+Stuff that should be durable: Numbers, SHAs, paths, quoted lines, code, etc. They keep whatever mark they had.
 
 C2PA on a file is a separate stamp. This skill is text.
 
@@ -123,8 +121,8 @@ Recast text is still model-written. Attribution and exam rules do not change.
 A later Claude pass puts the mark back.
 
 ## For the nerds
-
-The published detector is a one-sided test on secretly graded bits. It is not Anthropic's detector. Hashing Claude text with keys you invented is a coin flip. The math still tells you why a rewrite works, how long a mark needs to be detectable, and why synonym jitter is not enough.
+ ***i'm not a scitetist / staistician, although Grok 4.6 seems pretty darn good at this stuff:
+If you are one, the math should tell you why a rewrite works, how long a mark needs to be detectable, and why synonym jitter is not enough.
 
 A PRF turns `(context n-gram, candidate token, layer key)` into a bit `g` in `{0, 1}`. Unwatermarked text, or watermarked text hashed with the wrong key, has mean `1/2`. SynthID then runs a tournament on those bits. Under a uniform language model and two leaves, DeepMind Corollary 27:
 

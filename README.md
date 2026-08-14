@@ -26,13 +26,32 @@ A March 2026 Claude Code tracker used hidden Unicode. Anthropic pulled it. That 
 
 Think of the sampler as a loaded die. Every time Claude picks the next token, a secret key grades the options. The model leans green. Do that for a few hundred tokens and green is no longer a coin flip. That tilt is the watermark.
 
-A heavy rewrite on a model that does not have the key throws the die away. New sentences, new n-grams, new coin flips. Kirchenbauer et al. (2023) and Dathathri et al. in *Nature* (2024) both treat substantial paraphrase as the attack that drops detection. Light synonym swaps do not. Anthropic already said the mark "may persist through some editing." Some. Not a second model recasting the grammar.
+A heavy rewrite on a model that does not have the key throws the die away. You get new sentences and new n-grams, so the coin flips again. Kirchenbauer et al. (2023) and Dathathri et al. in *Nature* (2024) both treat substantial paraphrase as the attack that drops detection. Light synonym swaps do not. Anthropic already said the mark "may persist through some editing." That covers light edits. It does not cover a second model recasting the grammar.
 
 You cannot flip house/home as if those were the bits. You cannot see the grade. The move is not inversion. The move is destruction of the windows the grade was computed on.
 
-An **n-gram** here is n tokens in a row. A token is a piece the model sampled (a word, part of a word, a hash, a mark of punctuation). Public SynthID uses the previous four tokens plus the current one (`ngram_len = 5`). Copy those five in that order and you copy the roll. Recast so that sequence never appears and the roll is gone.
+An n-gram here is n tokens in a row. A token is a piece the model sampled: a word, part of a word, a hash, punctuation. Public SynthID uses the previous four tokens plus the current one (`ngram_len = 5`). Copy those five in that order and you copy the roll. Recast so that sequence never appears and the roll is gone.
 
-Style skills are not a shortcut. If Claude runs humanizer, Claude is still the last sampler. The die is still loaded. Last sampler wins.
+Style skills are not a shortcut. If Claude runs humanizer, Claude is still the last sampler and the die is still loaded.
+
+## Why 5-grams
+
+Because that is the window the published mark hashes.
+
+Public SynthID-Text sets `ngram_len = 5`. DeepMind's comment in the code: that is H = 4 in the paper, meaning the previous 4 tokens plus the current one. The secret function does not grade "house" alone. It grades this token given the four before it. Copy those five in that order and you copy the roll.
+
+Kirchenbauer-style green lists work the same way. The context seeds the split. Short context is the default because the mark has to work on ordinary sentences, not only on long essays.
+
+We score 5 words as a stand-in for 5 tokens. English runs about 1.3 tokens per word, so a 5-word span is a bit longer than a 5-token span. That is conservative: if a 5-word copy is gone, the shorter token window is gone too.
+
+| n | What happens |
+|---|---|
+| 1 to 2 | You ban "of the" and "in this." English breaks. Forced keeps look like failures. |
+| 3 to 4 | Closer to the real token window, but common glue still collides. |
+| 5 | Matches the published PRF window. Rare enough that a copied span is a leftover sentence, not grammar. |
+| 8 to 10 | Too easy. Change one adjective and the 10-gram dies while the 5-token rolls inside the sentence survive. |
+
+Five is not a magic robustness number. It is the scoring window. The skill destroys the object the detector looks at. Shorter windows are noise. Longer windows are a cheat that leaves the mark's actual n-grams intact.
 
 ## Proof: we ran it
 
@@ -44,7 +63,7 @@ Overlap is the published proxy: sliding 5-word windows, words standing in for to
 |---|---:|---:|---:|---|
 | 1. First recast | 1,487 | 238 | 16.0% | PASS (under 20%) |
 | 2. Recast the leftover frames | 1,487 | 113 | 7.6% | PASS |
-| 3. Three leftover optional spans | 1,487 | 109 | **7.3%** | PASS |
+| 3. Three leftover optional spans | 1,487 | 109 | 7.3% | PASS |
 
 The 20% bar is the skill's fail line. Under 10% is the better line. The memo landed at 7.3%.
 
@@ -63,9 +82,9 @@ That is the thesis on a real document: same facts, different 5-grams, Claude nev
 ## How to use it
 
 1. Take Claude output you own.
-2. Open a session that is **not** Claude. Grok, GPT, Gemini, Ollama, Codex. Confirm the model id if your harness exposes it.
+2. Open a session that is not Claude. Grok, GPT, Gemini, Ollama, Codex. Confirm the model id if your harness exposes it.
 3. Load [SKILL.md](SKILL.md). Tell it to recast the file.
-4. If the model is Claude, it will refuse. That refusal is the product.
+4. If the model is Claude, it will refuse. The refusal is the point.
 5. Read the overlap report. PASS is under 20%. Under 10% is the line we hit.
 6. Stop. Do not paste the recast back into Claude to polish it.
 
@@ -91,7 +110,7 @@ They will still run on Claude if you ask. This skill will not. A Claude rewrite 
 | Will humanizer remove it? | Only if a non-Claude model does the rewrite. Claude running humanizer restamps the mark. |
 | Minimum length? | The die is rolling from the first generated token. Published detectors in this family want a few hundred tokens to call it. A page is plenty. A tweet is often too short to prove either way. |
 
-## Limits we will not bury, and will not pad
+## Limits
 
 The open literature says this attack works on SynthID-class and Kirchenbauer-class marks. Anthropic has not shipped a public detector, so no third party can print their score. When they do, run it on the recast.
 
@@ -121,7 +140,7 @@ Mask end-of-sequence and repeated contexts. `S` is the mean of the leftover bits
 z = 2 √n (S - 1/2)
 p_norm  = Φ(-z)
 p_binom = P(K ≥ G | K ~ Bin(n, 1/2))
-log BF10 = G log(μ1/μ0) + (n − G) log((1−μ1)/(1−μ0))
+log BF10 = G log(μ1/μ0) + (n - G) log((1-μ1)/(1-μ0))
 ```
 
 A huge `n` will reject a fair coin on a 0.3 point drift. Use the Bayes factor or a length-calibrated threshold (DeepMind Appendix A.3.1). A small `p` is not, by itself, a mark.
@@ -135,7 +154,7 @@ Bits needed for a 0.001 false-positive rate and 95% power, three layers:
 | Soft / quality-first (μ = 0.52) | ~15,000 | several thousand words |
 | Barely loaded (μ = 0.51) | ~59,000 | a long essay |
 
-Google's SynthID writeups put reliable detection on a few hundred tokens. Kirchenbauer's z-test sits in the same band for a typical bias. That is why a paragraph is the usual "maybe" and a page is a call.
+Google's SynthID writeups put reliable detection on a few hundred tokens. Kirchenbauer's z-test sits in the same band for a typical bias. That is why a paragraph is usually inconclusive and a page is a call.
 
 The rewrite does not invert `g`. It replaces the tokens the PRF was looking at. Wrong keys, or new n-grams under no key, send `S` back to `1/2`. That is the whole attack.
 
@@ -168,7 +187,7 @@ def tokens_needed(mu1, alpha=1e-3, beta=0.05, mu0=0.5):
 
 The g-bit in the DeepMind reference is the high bit of a newlib/musl LCG (`mult = 6364136223846793005`) folded over the n-gram and the key. The hash is plumbing. The pattern is:
 
-`S − 1/2` is noise under the wrong key, and a large positive shift under the right one.
+`S - 1/2` is noise under the wrong key, and a large positive shift under the right one.
 
 A rewrite-proof mark would need a stable hash of meaning, not of wording. That is the research problem. It is not what shipped. Stronger token error-correction still dies when the tokens change.
 

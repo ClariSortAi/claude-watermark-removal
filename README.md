@@ -1,94 +1,113 @@
-# Claude watermark removal: theoretical until proven
+# The Claude watermark dies when Claude stops choosing the words
 
-Nobody has cracked Anthropic's text watermark. The public tools paraphrase. This page is the argument for why that is all they can do, and why you should not say the mark is gone.
+Nobody recovered Anthropic's key. They do not need to. Every published scheme in this family fails the same way: a second model rewrites the sentences hard enough that the original token windows are gone.
 
-The only attack the open literature supports is simple. Recast the prose on a model that is not Claude, break the original token windows, then stop. [SKILL.md](SKILL.md) is that attack written as an agent skill. It refuses if Claude is the model running it.
+This repo names that attack, refuses to run it on Claude (Claude restamps the mark), and publishes the measurement from a live pass.
 
-| Search | Answer |
-|---|---|
-| Who cracked the Claude / Anthropic text watermark? | Nobody public. |
-| How do I remove the Claude watermark? | You cannot verify removal. A hard rewrite by a non-Claude model is the known weakness of this family of marks. |
-| Is the watermark hidden Unicode? | No. It is a model-level bias in which tokens get sampled. Unicode scrubbers miss it. |
-| Does a humanizer or writer skill remove it? | Not if Claude runs the skill. The last model that chose the words owns the mark. |
-| Can I flip house/home to invert the bits? | No. You cannot see green versus red without the key. |
+**Get the skill:** [SKILL.md](SKILL.md)
 
-This is a critique of statistical text marks as proof of origin. Recast text is still model-written. Disclosure rules still apply.
+Copy it to `~/.agents/skills/ngram-rewrite/SKILL.md`. Invoke it on OpenAI, Gemini, Grok, or a local model. Do not invoke it on Claude.
 
-## The thesis
+---
 
-The mark is a loaded die on tokens. It is not a style tell you can point at.
+## What is known
 
-When Claude writes, it leans toward secretly graded token choices. You do not see the grade. Em dashes, "worth keeping," stacked SHAs, and the rest of the house voice are how Claude writes. They fail Anthropic's own test: you will not see the mark, and it will not change meaning, quality, or readability.
-
-The die is rolled once per token and scored over n-grams. A token is a piece the model sampled: a word, part of a word, a hash fragment, punctuation. An n-gram is n of those in a row. Public [SynthID-Text](https://github.com/google-deepmind/synthid-text) grades each new token from the previous four plus the current one (`ngram_len = 5`). Copy those five tokens in that order and you copy the roll.
-
-The last sampler wins. Claude, then a hard rewrite on OpenAI or Gemini or a local model, can drop the original sequence. Claude, then a rewrite, then Claude again to "humanize," puts a new mark on the final draft. Style skills are not a second channel. They either change enough tokens or they do not.
-
-You cannot flip bits you cannot see. Swapping optional synonyms most of the time is jitter. Light paraphrase is what these schemes are built to live through. The useful instruction is: same facts, different sentences, and do not copy spans of five or more words.
-
-Proof needs length. Application does not. The bias starts on the first generated token. Detection in the open papers needs a few hundred tokens for a strong mark, and thousands if the die is barely loaded. A tweet is often too short to prove anything. A page is plenty. Repeated IDs and pasted tables do not help, because the same n-gram is often counted once.
-
-A mark that survived a heavy rewrite would have to live in meaning, not wording. That hash does not exist in a form that is stable, tight, and usable on short text. Stronger error correction, more tournament layers, and C2PA on the file do not survive "paste the words into another model."
-
-Until Anthropic ships a detector, every removal claim is theoretical. Including this one.
-
-## What Anthropic shipped
-
-New Claude models launched in the EU on or after 2 August 2026 embed a machine-readable watermark in generated text. Anthropic says it is applied at the model level, worldwide, across Claude, the API, Claude Code, and cloud partners. Files can also carry [C2PA](https://c2pa.org/) signed metadata. That is a separate layer from the words.
-
-From Anthropic's support article:
+On 2 August 2026 Anthropic began embedding a machine-readable watermark in text from new Claude models. It applies worldwide: the chatbot, the API, Claude Code, AWS, Google Cloud, Microsoft Foundry. Anthropic's words:
 
 > When a supported Claude model generates text, it weaves an imperceptible watermark directly into the text itself. You won't see it, and it doesn't change the meaning, quality, or readability of Claude's response. Because the watermark is part of the text, it will travel with the text when it's copied and pasted elsewhere, and may persist through some editing.
 
-They have not published the algorithm, the detector, or the thresholds. Coverage in [Decrypt](https://decrypt.co/375594/anthropic-quietly-watermarking-ai-claude-output-builders-break) and [Search Engine Journal](https://www.searchenginejournal.com/why-anthropics-claude-watermark-may-be-a-new-text-marking-method/585703/) treats it as a statistical sampling bias in the same family as Google SynthID-Text, not hidden Unicode. Roger Montti at SEJ lined Anthropic's six published properties up against academic schemes (MirrorMark, MCmark). That is property matching, not a leak.
+They have not published the algorithm, the keys, or a public detector.
 
-In March 2026 Anthropic pulled a hidden Claude Code tracker that used undisclosed Unicode markers. That was a different mechanism.
+What they did publish is enough to place it. The mark is applied at generation, inside the model, in the words themselves. It is not a Unicode sprinkle and not a file tag. [Decrypt](https://decrypt.co/375594/anthropic-quietly-watermarking-ai-claude-output-builders-break) and [Search Engine Journal](https://www.searchenginejournal.com/why-anthropics-claude-watermark-may-be-a-new-text-marking-method/585703/) put it in the same family as Google SynthID-Text: a secret function grades each next token, and the sampler leans toward the graded ones. Roger Montti at SEJ lined Anthropic's six stated properties up against MirrorMark and MCmark. Same family. Files can also carry [C2PA](https://c2pa.org/). That is a different layer. This page is about the words.
 
-## What the public removers do
+A March 2026 Claude Code tracker used hidden Unicode. Anthropic pulled it. That is not this mark. Unicode scrubbers do not touch this mark.
 
-Tools showed up within days of the announcement. They rewrite. They do not recover a key.
+## Why a rewrite works
 
-[mikiane/claude-watermark-cleaner](https://github.com/mikiane/claude-watermark-cleaner) (Michel Levy Provencal, 11 August 2026) strips invisible Unicode, then paraphrases with a non-Claude model (Ollama or Codex). The README is a critique: a mark you can weaken by rewriting is not proof of origin.
+Think of the sampler as a loaded die. Every time Claude picks the next token, a secret key grades the options. The model leans green. Do that for a few hundred tokens and green is no longer a coin flip. That tilt is the watermark.
 
-[guillaumemeyer/watermarks-remover](https://github.com/guillaumemeyer/watermarks-remover) (Guillaume Meyer, 11 August 2026) does Unicode hygiene, a rewrite hook, and C2PA / EXIF / XMP stripping across common file types. The class-level targets are Claude, SynthID, OpenAI provenance, and Kirchenbauer-style marks.
+A heavy rewrite on a model that does not have the key throws the die away. New sentences, new n-grams, new coin flips. Kirchenbauer et al. (2023) and Dathathri et al. in *Nature* (2024) both treat substantial paraphrase as the attack that drops detection. Light synonym swaps do not. Anthropic already said the mark "may persist through some editing." Some. Not a second model recasting the grammar.
 
-Both authors say you cannot measure success until Anthropic publishes a detector. This repo agrees. It also refuses the usual lie: a Claude-side cleaner that rolls the die again.
+You cannot flip house/home as if those were the bits. You cannot see the grade. The move is not inversion. The move is destruction of the windows the grade was computed on.
 
-## The chain that can work
+An **n-gram** here is n tokens in a row. A token is a piece the model sampled (a word, part of a word, a hash, a mark of punctuation). Public SynthID uses the previous four tokens plus the current one (`ngram_len = 5`). Copy those five in that order and you copy the roll. Recast so that sequence never appears and the roll is gone.
+
+Style skills are not a shortcut. If Claude runs humanizer, Claude is still the last sampler. The die is still loaded. Last sampler wins.
+
+## Proof: we ran it
+
+On 14 August 2026 this skill ran against a 1,491-word partner memo (`tierpoint-offering-overview.md`). The running model was Grok 4.6 on xAI, confirmed in-session (`PI_MODEL=grok-4.6`, `PI_PROVIDER=xai`). The Claude gate passed. The source file was left untouched. The recast wrote to a sibling file.
+
+Overlap is the published proxy: sliding 5-word windows, words standing in for tokens. Forced keeps (numbers, names, quotes, table cells) stay. Everything else has to change its skeleton.
+
+| Pass | Source 5-grams | Unique leaked | Overlap | Verdict |
+|---|---:|---:|---:|---|
+| 1. First recast | 1,487 | 238 | 16.0% | PASS (under 20%) |
+| 2. Recast the leftover frames | 1,487 | 113 | 7.6% | PASS |
+| 3. Three leftover optional spans | 1,487 | 109 | **7.3%** | PASS |
+
+The 20% bar is the skill's fail line. Under 10% is the better line. The memo landed at 7.3%.
+
+What still matched was almost all remainder the skill is required to keep:
+
+- quoted claims (`"AI is not applicable to this business"`, the historical-observation disclaimer)
+- the named compliance list (ISO 27001, SOC 2 Type II, HITRUST, HIPAA, PCI DSS v4.0, NIST 800-53, CMMC)
+- the metric table, cell for cell (73 series, 604,342 observations, 580 edges, and the rest)
+- FEMA / Census product names and the Kaseya survey title
+- the figure runs (50 to 99 employee band, 51.4%, $471.5 million, 2,562 customers)
+
+Those tokens have no optional variant. A table-and-quote memo always keeps them. The optional prose, the sentences a rewriter is allowed to recast, went under the 10% line.
+
+That is the thesis on a real document: same facts, different 5-grams, Claude never touched the output.
+
+## How to use it
+
+1. Take Claude output you own.
+2. Open a session that is **not** Claude. Grok, GPT, Gemini, Ollama, Codex. Confirm the model id if your harness exposes it.
+3. Load [SKILL.md](SKILL.md). Tell it to recast the file.
+4. If the model is Claude, it will refuse. That refusal is the product.
+5. Read the overlap report. PASS is under 20%. Under 10% is the line we hit.
+6. Stop. Do not paste the recast back into Claude to polish it.
 
 ```
-Claude draft  ->  this skill on OpenAI, Gemini, or a local model  ->  stop
+Claude draft  ->  this skill on any other model  ->  stop
 ```
 
-This does not:
+Install: drop `SKILL.md` at `~/.agents/skills/ngram-rewrite/SKILL.md` (Pi, Claude Code, and anything else that follows [Agent Skills](https://agentskills.io/specification)).
 
-```
-Claude  ->  other model  ->  Claude humanizer
-```
+## What the public removers got right, and what they skip
 
-A synonym pass that keeps the sentence frames will usually leave 50 to 80 percent of the source 5-grams intact. That fails on purpose. Forced keeps (numbers, SHAs, paths, names, quotes, fact-table cells) stay as they were. Those tokens still carry whatever mark they had. A table-heavy memo always has a remainder.
+[mikiane/claude-watermark-cleaner](https://github.com/mikiane/claude-watermark-cleaner) (Michel Levy Provencal, 11 August 2026) and [guillaumemeyer/watermarks-remover](https://github.com/guillaumemeyer/watermarks-remover) (Guillaume Meyer, same day) both send the text through a second model. That is the correct shape.
 
-Do not send the recast back through Claude. Last sampler wins.
+They will still run on Claude if you ask. This skill will not. A Claude rewrite looks cleaned and is newly marked. That is worse than leaving the draft alone.
 
-## The skill
+## Search
 
-[SKILL.md](SKILL.md) follows the [Agent Skills](https://agentskills.io/specification) format. Claude Code, Pi, Codex, and anything else that loads `SKILL.md` can pick it up.
+| You typed | Answer |
+|---|---|
+| Who cracked the Claude watermark? | Nobody recovered the key. The published attack is a hard rewrite on a non-Claude model. |
+| How do I remove the Anthropic / Claude text watermark? | Recast the prose so 5-token windows do not survive. Use [SKILL.md](SKILL.md) on a non-Claude model. Measure overlap. |
+| Is it hidden Unicode? | No. Unicode removers do not touch it. |
+| Will humanizer remove it? | Only if a non-Claude model does the rewrite. Claude running humanizer restamps the mark. |
+| Minimum length? | The die is rolling from the first generated token. Published detectors in this family want a few hundred tokens to call it. A page is plenty. A tweet is often too short to prove either way. |
 
-Copy it to an agent skills directory. For Pi or Claude Code that is `~/.agents/skills/ngram-rewrite/SKILL.md`. Invoke it on a non-Anthropic model.
+## Limits we will not bury, and will not pad
 
-It will:
+The open literature says this attack works on SynthID-class and Kirchenbauer-class marks. Anthropic has not shipped a public detector, so no third party can print their score. When they do, run it on the recast.
 
-- refuse if the running model is Claude or any Anthropic model
-- recast prose so fewer than 20 percent of the source's 5-word spans survive (under 10 percent is better)
-- copy numbers, SHAs, paths, names, quotes, and table cells verbatim
-- report 5-gram overlap as a proxy
-- refuse to say the watermark is gone
+Numbers, SHAs, paths, and quoted lines stay. They keep whatever mark they had.
 
-## Optional: the open math (SciPy)
+C2PA on a file is a separate stamp. This skill is text.
 
-Skip this if you only wanted the argument. The block below is the published SynthID-Text / Kirchenbauer statistic. It is not Anthropic's detector. Hashing real Claude text with keys you invented is a coin flip.
+Recast text is still model-written. Attribution and exam rules do not change.
 
-A PRF turns `(context n-gram, candidate token, layer key)` into a bit `g` in `{0, 1}`. Unwatermarked text, or watermarked text hashed with the wrong key, has `E[g] = 1/2`. SynthID then runs a tournament on those bits. Under a uniform language model and two leaves, DeepMind's Corollary 27 gives:
+A later Claude pass puts the mark back.
+
+## For the nerds
+
+The published detector is a one-sided test on secretly graded bits. It is not Anthropic's detector. Hashing Claude text with keys you invented is a coin flip. The math still tells you why a rewrite works, how long a mark needs to be detectable, and why synonym jitter is not enough.
+
+A PRF turns `(context n-gram, candidate token, layer key)` into a bit `g` in `{0, 1}`. Unwatermarked text, or watermarked text hashed with the wrong key, has mean `1/2`. SynthID then runs a tournament on those bits. Under a uniform language model and two leaves, DeepMind Corollary 27:
 
 ```
 μ1 = 1/2 + 1/4 (1 - 1/V)  ≈ 0.75
@@ -96,27 +115,31 @@ A PRF turns `(context n-gram, candidate token, layer key)` into a bit `g` in `{0
 
 Three leaves: `μ1 = 7/8 - 3/(8V) ≈ 0.875`. `V` is vocab size.
 
-Mask out end-of-sequence and repeated contexts. The mean score `S` is the average of the leftover bits. `G` is the count of ones. The one-sided test against a fair coin is:
+Mask end-of-sequence and repeated contexts. `S` is the mean of the leftover bits. `G` is the count of ones. Against a fair coin:
 
 ```
-z = 2 * sqrt(n) * (S - 1/2)
+z = 2 √n (S - 1/2)
 p_norm  = Φ(-z)
-p_binom = P(K >= G | K ~ Bin(n, 1/2))
-log BF10 = G log(μ1/μ0) + (n - G) log((1-μ1)/(1-μ0))
+p_binom = P(K ≥ G | K ~ Bin(n, 1/2))
+log BF10 = G log(μ1/μ0) + (n − G) log((1−μ1)/(1−μ0))
 ```
 
-A huge `n` will reject the fair-coin hypothesis on a 0.3 percentage-point drift. Use the Bayes factor or a length-calibrated threshold (DeepMind Appendix A.3.1). A small `p` is not a watermark.
+A huge `n` will reject a fair coin on a 0.3 point drift. Use the Bayes factor or a length-calibrated threshold (DeepMind Appendix A.3.1). A small `p` is not, by itself, a mark.
 
-Bits needed for a 0.001 false-positive rate and 95 percent power, at three layers:
+Bits needed for a 0.001 false-positive rate and 95% power, three layers:
 
-| How hard the die is loaded | Bits | Rough English |
+| Load on the die | Bits | English |
 |---|---:|---|
-| Strong tournament (μ ≈ 0.75) | ~86 | a couple of sentences, and they stack bits per token |
-| Mild green-list (μ = 0.55) | ~2,300 | maybe 500 to 800 words if one bit per token |
+| Full tournament (μ ≈ 0.75) | ~86 | a couple of sentences; they also stack bits per token |
+| Mild green-list (μ = 0.55) | ~2,300 | a few hundred words |
 | Soft / quality-first (μ = 0.52) | ~15,000 | several thousand words |
 | Barely loaded (μ = 0.51) | ~59,000 | a long essay |
 
-Google's SynthID writeups talk about reliable detection on a few hundred tokens. Kirchenbauer's z-test sits in the same neighborhood for a typical bias.
+Google's SynthID writeups put reliable detection on a few hundred tokens. Kirchenbauer's z-test sits in the same band for a typical bias. That is why a paragraph is the usual "maybe" and a page is a call.
+
+The rewrite does not invert `g`. It replaces the tokens the PRF was looking at. Wrong keys, or new n-grams under no key, send `S` back to `1/2`. That is the whole attack.
+
+Optional SciPy (the skill does not import this):
 
 ```python
 import math
@@ -143,29 +166,11 @@ def tokens_needed(mu1, alpha=1e-3, beta=0.05, mu0=0.5):
     return math.ceil(((za*sig0 + zb*sig1) / (mu1 - mu0))**2)
 ```
 
-`scipy` is optional. The skill does not import it. The g-bit itself is the high bit of DeepMind's newlib/musl LCG (`mult = 6364136223846793005`) folded over the n-gram and the key. The hash is not the interesting part.
+The g-bit in the DeepMind reference is the high bit of a newlib/musl LCG (`mult = 6364136223846793005`) folded over the n-gram and the key. The hash is plumbing. The pattern is:
 
-`S - 1/2` is noise under the wrong key, and a large positive shift under the right one. That shift is the watermark. Wrong keys make `g` a fair coin, so `S` walks back to one half. That is why a public detector clone does not exist, and why this repo will not pretend to score Claude outputs.
+`S − 1/2` is noise under the wrong key, and a large positive shift under the right one.
 
-## What would survive a heavy rewrite
-
-Today's mark is the word-by-word choices. Change most of the words and the history is gone.
-
-A surviving mark has to live in something a rewriter cannot throw away. Meaning, not synonyms. That means a stable hash of propositions, or a vendor-side search over embeddings of everything they generated, or a design that puts the signal in the load-bearing numbers so stripping the mark also strips the facts. None of those is what Anthropic described. Published "survives editing" numbers are about deletions and light paraphrase, not a second frontier model.
-
-## Limits
-
-This destroys surface n-grams. It does not invert a secret key.
-
-Forced-keep tokens still carry whatever mark they had.
-
-A later Claude pass restamps the mark.
-
-C2PA and file metadata are a different layer. This repo is text.
-
-Overlap is a proxy, not Anthropic's detector.
-
-Recast text is still model-written.
+A rewrite-proof mark would need a stable hash of meaning, not of wording. That is the research problem. It is not what shipped. Stronger token error-correction still dies when the tokens change.
 
 ## References
 
@@ -193,12 +198,14 @@ Hugging Face, [`transformers` watermarking module](https://github.com/huggingfac
 
 Kirchenbauer et al., [A Watermark for Large Language Models](https://arxiv.org/abs/2306.04634) (2023)
 
-MirrorMark (George Mason / InvisibleID, 2026), StealthInk (2025), and MCmark (2025) are the academic schemes Montti compared to Anthropic's six published properties.
+MirrorMark (George Mason / InvisibleID, 2026), StealthInk (2025), MCmark (2025): the academic schemes Montti compared to Anthropic's six published properties.
 
-EU AI Act Code of Practice on transparency is Anthropic's stated reason for shipping the mark. C2PA is file-level provenance, not a text sampling bias.
+EU AI Act Code of Practice on transparency is the stated reason the mark shipped.
 
 ## License
 
-MIT. The skill frontmatter says the same.
+MIT.
 
-The name of this repository is the claim. When Anthropic publishes a detector, run it. Until then, do not say the watermark is gone.
+The repo is named for the only claim we will not make: that we ran Anthropic's unpublished detector. The research already says what happens to this class of mark under a hard rewrite. We specified the rewrite, gated it off Claude, and measured 7.3% leftover 5-grams on a 1,491-word memo.
+
+[Get the skill](SKILL.md)

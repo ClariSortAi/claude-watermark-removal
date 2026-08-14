@@ -1,8 +1,9 @@
 # Goodbye, watermarks. All you have to do is have another model re-write your text and disrupt known patterns of watermarking.
 
-Making no claim or warranty that this works, or has access to any info outside of the public domain. Every published scheme in this family fails the same way: a second model rewrites the sentences hard enough that the original token windows are gone.
+Making no claim or warranty that this works, or has access to any info outside of the public domain. 
+Every published "watermarking" system fails the same way: a second model rewrites the sentences "hard" enough that the original sig is gone.
 
-This repo names that attack, refuses to run it on Claude (Claude restamps the mark), and publishes the measurement from a live pass.
+This SKILL file uses a rewrite hard enough vector, refuses to run it on Claude (Claude restamps the mark), and then publishes the infered results from a live pass.
 
 **Get the skill:** [SKILL.md](SKILL.md)
 
